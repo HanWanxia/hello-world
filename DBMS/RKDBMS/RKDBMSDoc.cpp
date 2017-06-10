@@ -34,12 +34,39 @@ END_MESSAGE_MAP()
 
 CRKDBMSDoc::CRKDBMSDoc()
 {
+	CFile file;
 	m_strError = _T("");	//	Initialize the exception information
 	m_pEditTable = NULL;
 	m_pEditDB = new CDBEntity();
-	name = _T("Ruanko");
-	m_pEditDB->SetName(name);
-	mydb.Add(m_pEditDB);
+	char* s=new char[100];
+	file.Open(_T("F:\\Liwenjie\\数据库实践课\\finalDBMS\\RKDBMS\\Output\\database.txt"), CFile::modeReadWrite | CFile::shareDenyWrite);
+	file.SeekToBegin();
+	for(int i=0;i<file.GetLength();i+=100)
+	{
+		CDBEntity* entity=new CDBEntity();
+		file.Read(s,100);
+		CString h;
+		h=s;
+		entity->SetName(h);
+		mydb.Add(entity);
+	}
+	
+	if(file.GetLength()>=100)
+	{
+		file.SeekToBegin();
+		file.Read(s,100);
+		name = s;
+		m_pEditDB->SetName(name);
+	}
+	else
+	{
+		name=_T("ruanko");
+	}
+	
+	
+	
+	
+	file.Close();
 }
 
 
@@ -55,9 +82,10 @@ CRKDBMSDoc::~CRKDBMSDoc()
 ***************************************************************/
 BOOL CRKDBMSDoc::OnNewDocument()
 {
+	
 	if (!CDocument::OnNewDocument())
 		return FALSE;
-
+	
 	m_pEditDB->SetName(name);	// The default database is Ruanko
 
 	CDBLogic dbLogic(name);
@@ -87,6 +115,9 @@ BOOL CRKDBMSDoc::OnNewDocument()
 		delete e;
 	}
 	
+	
+
+
 	return TRUE;
 }
 
@@ -342,6 +373,58 @@ CFieldEntity* CRKDBMSDoc::AddField(CFieldEntity &field)
 
 		// Return the last field
 		CFieldEntity* pField = m_pEditTable->GetFieldAt(nCount -1);
+		return pField;
+	}
+	catch(CAppException* e)
+	{
+		m_strError = e->GetErrorMessage();
+		delete e;
+		return NULL;
+	}
+}
+/******************************************************/
+CFieldEntity* CRKDBMSDoc::ModifyField(CFieldEntity &field,CTableEntity* pTable)
+{
+	CTableLogic tbLogic;
+	try
+	{
+		// Add a field
+		if(tbLogic.ModifyField(m_pEditDB->GetName(), *m_pEditTable, field,pTable) == false)
+		{
+			return NULL;
+		}
+
+		// Get field number
+		int nCount = m_pEditTable->GetFieldNum();
+
+		// Return the last field
+		CFieldEntity* pField = &field;
+		return pField;
+	}
+	catch(CAppException* e)
+	{
+		m_strError = e->GetErrorMessage();
+		delete e;
+		return NULL;
+	}
+}
+/**********************************************/
+CFieldEntity* CRKDBMSDoc::DeleteField(CFieldEntity &field,CTableEntity* pTable)
+{
+	CTableLogic tbLogic;
+	try
+	{
+		// Add a field
+		if(tbLogic.DeleteField(m_pEditDB->GetName(), *m_pEditTable, field,pTable) == false)
+		{
+			return NULL;
+		}
+
+		// Get field number
+		int nCount = m_pEditTable->GetFieldNum();
+
+		// Return the last field
+		CFieldEntity* pField = &field;
 		return pField;
 	}
 	catch(CAppException* e)
@@ -698,3 +781,20 @@ void CRKDBMSDoc::selectRecord(CRecordEntity &selectRecord)
 	}
 }
 
+int CRKDBMSDoc::getDBAt()
+{
+	int num=0;
+	int i=0;
+	for(i;i<GetDBNum();i++)
+	{
+		if(GetEditDB()->GetName()==mydb.GetAt(i)->GetName())
+		{
+			break;
+		}
+		else
+		{
+			num++;
+		}
+	}
+	return i;
+}

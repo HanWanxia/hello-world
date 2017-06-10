@@ -37,6 +37,8 @@ private:
 	HTREEITEM AddTableNode(CTableEntity* pTable);	// Add a table item
 	HTREEITEM selectDB;
 	HTREEITEM AddFieldNode(CFieldEntity* pField, HTREEITEM hTableItem); // Add the field item
+	HTREEITEM ModifyFieldNode(CFieldEntity* pField, HTREEITEM hTableItem,CTableEntity* pTable); // Modify the field item
+	HTREEITEM DeleteFieldNode(CFieldEntity* pField, HTREEITEM hTableItem,CTableEntity* pTable); // Modify the field item
 	HTREEITEM GetTableItem(CString strTableName);	// Get to table item
 	HTREEITEM GetDBItem(CString strDBName);
 private:

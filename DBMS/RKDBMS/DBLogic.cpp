@@ -17,6 +17,16 @@ CDBLogic::CDBLogic(CString name)
 **************************************************/
 bool CDBLogic::CreateDatabase(CDBEntity* db)
 {
+	CFile file;
+	file.Open(_T("F:\\Liwenjie\\数据库实践课\\finalDBMS\\RKDBMS\\Output\\database.txt"), CFile::modeReadWrite | CFile::shareDenyWrite);
+	file.SeekToEnd();
+	CString s;
+	char* name=new char[100];
+	s=db->GetName();
+	USES_CONVERSION;
+	name=T2A(s.GetBuffer(sizeof(s)));
+	file.Write(name,100);
+	file.Close();
 	try 
 	{
 		// Decide whether the file exists, if there is no,a file will be created.

@@ -14,10 +14,11 @@ class CMainFrame : public CFrameWnd
 protected: // create from serialization only
 	CMainFrame();
 	DECLARE_DYNCREATE(CMainFrame)
+	
 
 // Attributes
 public:
-
+	
 // Operations
 public:
 
@@ -37,7 +38,8 @@ protected:  // control bar embedded members
 	CToolBar          m_wndToolBar;     // The toolbar object
 	CStatusBar        m_wndStatusBar;   // The status bar object
 	CSplitterWnd      m_wndSpliter;     // Separation of the window
-	BOOL	m_bOpenDatabase;			// Whether has opened database
+	//bool m_bOpenDatabase;			// Whether has opened database
+	int open[100];
 
 // Generated message map functions
 protected:
@@ -59,6 +61,8 @@ public:
 	CString name;
 	afx_msg void OnModifyRecord();
 	afx_msg void OnDeleteRecord();
+	afx_msg void OnModifyField();
+	afx_msg void OnDeleteField();
 };
 
 

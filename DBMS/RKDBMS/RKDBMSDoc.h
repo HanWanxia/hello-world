@@ -50,6 +50,7 @@ private:
 	TABLEARR m_arrTable;	// Table array
 	CTableEntity* m_pEditTable;	// Current edit form
 	CDBEntity* m_pEditDB;
+	CDBEntity* m_pEditDB1;
 	DBARR mydb;
 
 	RECORDARR m_arrRecord;	// Record information
@@ -73,6 +74,8 @@ public:
 	CTableEntity* GetEditTable();					// Get current form
 	CDBEntity* GetEditDB();
 	CFieldEntity* AddField(CFieldEntity &field);	// Add field
+	CFieldEntity* ModifyField(CFieldEntity &field,CTableEntity* pTable);     //Modify field
+	CFieldEntity* DeleteField(CFieldEntity &field,CTableEntity* pTable);     //Delete field
 	void SetEditTable(CTableEntity* pTable);		// Set the current form
 	void SetEditTable(CString strTableName);		// Set the current form
 	void SetEditDB(CString strDBName);
@@ -89,4 +92,5 @@ public:
 	CRecordEntity* GetRecord(int nIndex);			// Get a record
 	CRKDBMSDoc(CString n);
 	CString name;
+	int getDBAt();
 };

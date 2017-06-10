@@ -57,6 +57,12 @@ void CDBView::Dump(CDumpContext& dc) const
 void CDBView::OnInitialUpdate()
 {
 	CTreeView::OnInitialUpdate();
+	CFile file;
+	
+	file.Open(_T("F:\\Liwenjie\\数据库实践课\\finalDBMS\\RKDBMS\\Output\\database.txt"), CFile::modeReadWrite | CFile::shareDenyWrite);
+	
+	file.SeekToBegin();
+	
 
 	//	Get the document object
 	CRKDBMSDoc* pDoc = (CRKDBMSDoc*)this->GetDocument();
@@ -74,7 +80,7 @@ void CDBView::OnInitialUpdate()
 		pDoc->SetError(_T(""));
 		return;
 	}
-
+	
 	//	Delete images from the list
 	m_imageList.DeleteImageList();
 
@@ -106,13 +112,17 @@ void CDBView::OnInitialUpdate()
 	CString strDBName = pDoc->GetDBEntity()->GetName();
 
 	//	Add root item
-	HTREEITEM hRoot = m_pTreeCtrl->InsertItem(strDBName, 0, 0, NULL);
-
-	// Add number to the root item
-	m_pTreeCtrl->SetItemData(hRoot, MENU_DATABASE);
-
-	//	Expand item
-	m_pTreeCtrl->Expand(hRoot, TVE_EXPAND);
+	HTREEITEM hRoot;
+	char* name=new char[100];
+	for(int i=0;i<file.GetLength();i+=100)
+	{
+		file.Read(name,100);
+		strDBName=name;
+		hRoot = m_pTreeCtrl->InsertItem(strDBName, 0, 0, NULL);
+		m_pTreeCtrl->SetItemData(hRoot, MENU_DATABASE);
+		m_pTreeCtrl->Expand(hRoot, TVE_EXPAND);
+	}
+	file.Close();
 }
 
 /**************************************************************
@@ -125,6 +135,16 @@ void CDBView::OnInitialUpdate()
 **************************************************************/
 void CDBView::OnUpdate(CView* pSender, LPARAM lHint, CObject* pHint)
 {
+	CRKDBMSDoc* pDoc = (CRKDBMSDoc*)this->GetDocument();
+	CString log;
+	CString strTime;
+	SYSTEMTIME t;
+	GetLocalTime(&t);
+	CString time=CTimeHelper::ToDatetimeString(t);
+	CStdioFile file;
+	file.Open(_T("F:\\Liwenjie\\数据库实践课\\finalDBMS\\RKDBMS\\Output\\Log.txt"), CFile::modeWrite | CFile::shareDenyWrite);
+
+	char* logmess=new char[100];
 	if (pSender == NULL)
 	{
 		switch (lHint)
@@ -137,13 +157,16 @@ void CDBView::OnUpdate(CView* pSender, LPARAM lHint, CObject* pHint)
 				HTREEITEM hTableNode = AddTableNode(pTable);
 
 				m_pTreeCtrl->SelectItem(hTableNode);
+				file.SeekToEnd();
+				log=time+_T(" CreateTable ")+pTable->GetName()+_T(" in ")+pDoc->GetEditDB()->GetName()+_T(";");
+				file.Write(log,2*log.GetLength());
+				
+				file.Close();
 			}
 			break;
 		case UPDATE_CREATEDATABASE:	//Create table
 			{
-				/*CRKDBMSDoc* pDoc = (CRKDBMSDoc*)this->GetDocument();
-				CDBEntity pDB = pDoc->GetDBEntity();
-				n = pDB.GetName();*/
+				
 
 				CDBEntity* pDB = (CDBEntity*)pHint;
 				CRKDBMSDoc* pDoc = (CRKDBMSDoc*)this->GetDocument();
@@ -153,29 +176,74 @@ void CDBView::OnUpdate(CView* pSender, LPARAM lHint, CObject* pHint)
 				m_pTreeCtrl->SetItemData(hRoot, MENU_DATABASE);
 				//HTREEITEM hNewDBItem = AddDBNode(pNewDB, hDBItem);
 				m_pTreeCtrl->SelectItem(hDBItem);
+				file.SeekToEnd();
+				log=time+_T(" CreateDatabase ")+pDB->GetName()+_T(";");
+				file.Write(log,2*log.GetLength());
+				file.Close();
 			}
 			break;
 		case UPDATE_ADD_FIELD:		// Add field
 			{
 				CFieldEntity* pField = (CFieldEntity*)pHint;
-				CRKDBMSDoc* pDoc = (CRKDBMSDoc*)this->GetDocument();
 				CTableEntity* pTable = pDoc->GetEditTable();
  				HTREEITEM hTableItem = GetTableItem(pTable->GetName());
 				HTREEITEM hFieldItem = AddFieldNode(pField, hTableItem);
 				m_pTreeCtrl->SelectItem(hFieldItem);
+				file.SeekToEnd();
+				log=time+_T(" AddField ")+pField->GetName()+_T(" in ")+pDoc->GetEditDB()->GetName()+_T(" ")+pTable->GetName()+_T(";");
+				file.Write(log,2*log.GetLength());
+				file.Close();
 			}
 			break;
 		case UPDATE_OPEN_DATABASE:	// Open database
 			{
 				// Get table
-				CRKDBMSDoc* pDoc = (CRKDBMSDoc*)this->GetDocument();
-				int nCount = pDoc->GetTableNum();
-				for (int i = 0; i < nCount; i++)
+				
+				if(pDoc->GetDBEntity()->GetName()==m_pTreeCtrl->GetItemText(m_pTreeCtrl->GetSelectedItem()))
 				{
-					CTableEntity* pTableEntity = pDoc->GetTable(i);
-					AddTableNode(pTableEntity);
+					int nCount = pDoc->GetTableNum();
+					for (int i = 0; i < nCount; i++)
+					{
+						CTableEntity* pTableEntity = pDoc->GetTable(i);
+						AddTableNode(pTableEntity);
+					
+					}
 					m_pTreeCtrl->SelectItem(m_pTreeCtrl->GetRootItem());
 				}
+				file.SeekToEnd();
+				log=time+_T("  OpenDatabase  ")+pDoc->GetEditDB()->GetName()+_T(";");
+				file.Write(log,2*log.GetLength());
+				file.Close();
+				
+			}
+			break;
+		case UPDATE_Modify_Field:    //Modify field
+			{
+				CFieldEntity* pField = (CFieldEntity*)pHint;
+				
+				CTableEntity* pTable = pDoc->GetEditTable();
+ 				HTREEITEM hTableItem = GetTableItem(pTable->GetName());
+
+				HTREEITEM hFieldItem = ModifyFieldNode(pField, hTableItem,pTable);
+				m_pTreeCtrl->SelectItem(hFieldItem);
+				file.SeekToEnd();
+				log=time+_T(" ModifyField ")+m_pTreeCtrl->GetItemText(m_pTreeCtrl->GetSelectedItem())+_T("to")+_T(" ")+pField->GetName()+_T(" in ")+pDoc->GetEditDB()->GetName()+_T(" ")+pTable->GetName()+_T(";");
+				file.Write(log,2*log.GetLength());
+				file.Close();
+			}
+			break;
+		case UPDATE_Delete_Field:
+			{
+				CFieldEntity* pField = (CFieldEntity*)pHint;
+			
+				CTableEntity* pTable = pDoc->GetEditTable();
+ 				HTREEITEM hTableItem = GetTableItem(pTable->GetName());
+
+				HTREEITEM hFieldItem = DeleteFieldNode(pField, hTableItem,pTable);
+				file.SeekToEnd();
+				log=time+_T("  DeleteField  ")+pField->GetName()+_T(" in ")+pDoc->GetEditDB()->GetName()+_T(" ")+pTable->GetName();
+				file.Write(log,2*log.GetLength());
+				file.Close();
 			}
 			break;
 		default:
@@ -265,6 +333,27 @@ HTREEITEM CDBView::AddFieldNode(CFieldEntity* pField, HTREEITEM hTableItem)
 	
 	return hFieldNode;
 }
+/***********************************************************/
+HTREEITEM CDBView::ModifyFieldNode(CFieldEntity* pField, HTREEITEM hTableItem,CTableEntity* pTable)
+{
+	// Get the child item of the table item
+	HTREEITEM hItem = m_pTreeCtrl->GetSelectedItem();
+	
+	
+	m_pTreeCtrl->SetItemText(hItem,pField->GetName());
+	return hItem;
+}
+/***************************************************/
+HTREEITEM CDBView::DeleteFieldNode(CFieldEntity* pField, HTREEITEM hTableItem,CTableEntity* pTable)
+{
+	// Get the child item of the table item
+	HTREEITEM hItem = m_pTreeCtrl->GetSelectedItem();
+	
+	
+
+	m_pTreeCtrl->DeleteItem(hItem);
+	return hItem;
+}
 
 /**************************************************************
 [FunctionName]	OnTvnSelchanged
@@ -295,8 +384,9 @@ void CDBView::OnTvnSelchanged(NMHDR *pNMHDR, LRESULT *pResult)
 				pDoc->SetEditDB(dbname);
 			}
 			selectDB = P;
+			//GetDlgItem(IDM_OPEN_DATABASE)->EnableWindow(true);
 		}
-		else
+		else if(dwVal == MENU_TABLE)
 		{
 			HTREEITEM hItem = hSelectedItem; 
 			while (dwVal != MENU_TABLE)
@@ -306,7 +396,15 @@ void CDBView::OnTvnSelchanged(NMHDR *pNMHDR, LRESULT *pResult)
 			}
 			CString name = m_pTreeCtrl->GetItemText(hItem);
 			pDoc->SetEditTable(m_pTreeCtrl->GetItemText(hItem));
-		}		
+		}
+		else if(dwVal == MENU_FIELD)
+		{
+			CString fname;
+			fname=m_pTreeCtrl->GetItemText(hSelectedItem);
+			pDoc->GetEditTable()->SetEditField(fname);
+		}
+		else
+		{}
 	}
 	*pResult = 0;
 }

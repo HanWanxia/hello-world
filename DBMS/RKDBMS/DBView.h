@@ -41,6 +41,8 @@ private:
 	HTREEITEM DeleteFieldNode(CFieldEntity* pField, HTREEITEM hTableItem,CTableEntity* pTable); // Modify the field item
 	HTREEITEM GetTableItem(CString strTableName);	// Get to table item
 	HTREEITEM GetDBItem(CString strDBName);
+	HTREEITEM ModifyTableNode(CString tbname);
+	void DeleteTableNode();
 private:
 	CImageList m_imageList;	//	Tree image list
 

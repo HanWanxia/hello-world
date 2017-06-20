@@ -18,14 +18,19 @@ CDBLogic::CDBLogic(CString name)
 bool CDBLogic::CreateDatabase(CDBEntity* db)
 {
 	CFile file;
-	file.Open(_T("F:\\Liwenjie\\数据库实践课\\finalDBMS\\RKDBMS\\Output\\database.txt"), CFile::modeReadWrite | CFile::shareDenyWrite);
+	file.Open(_T("database.txt"), CFile::modeReadWrite | CFile::shareDenyWrite);
 	file.SeekToEnd();
+	CFile file1;
+	file1.Open(_T("table.txt"), CFile::modeReadWrite | CFile::shareDenyWrite);
+	file1.SeekToEnd();
 	CString s;
 	char* name=new char[100];
 	s=db->GetName();
 	USES_CONVERSION;
 	name=T2A(s.GetBuffer(sizeof(s)));
 	file.Write(name,100);
+	file1.Write("0",1);
+	file1.Close();
 	file.Close();
 	try 
 	{

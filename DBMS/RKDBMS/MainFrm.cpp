@@ -17,6 +17,7 @@
 #include "UpdateRecordDlg.h"
 #include "CreateDatabase.h"
 #include "ModifyField.h"
+#include "EditTable.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -40,6 +41,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(IDM_DELETE_RECORD, &CMainFrame::OnDeleteRecord)
 	ON_COMMAND(IDM_MODIFY_FIELD, &CMainFrame::OnModifyField)
 	ON_COMMAND(IDM_DELETE_FIELD, &CMainFrame::OnDeleteField)
+	ON_COMMAND(IDM_DELETE_TABLE, &CMainFrame::OnDeleteTable)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -62,18 +64,24 @@ static UINT indicators[] =
 CMainFrame::CMainFrame()
 {
 	CFile file;
-	CFile file1;
-	file.Open(_T("F:\\Liwenjie\\数据库实践课\\finalDBMS\\RKDBMS\\Output\\table.txt"), CFile::modeReadWrite | CFile::shareDenyWrite);
+	
+	file.Open(_T("table.txt"), CFile::modeReadWrite | CFile::shareDenyWrite);
 	file.SeekToBegin();
 	char* bopen=new char[1];
 	CString dbname;
 	int h;
-	for(int i=0;i<file.GetLength();i++)
+	if(file.GetLength()<1)
 	{
-		file.Read(bopen,1);
-		h=atoi(bopen);
-		open[i]=h;
+		open[0]=0;
+	}else{
+		for(int i=0;i<file.GetLength();i++)
+		{
+			file.Read(bopen,1);
+			h=atoi(bopen);
+			open[i]=h;
+		}
 	}
+	
 	//m_bOpenDatabase=false;
 	file.Close();
 }
@@ -186,11 +194,12 @@ void CMainFrame::OnNewTable()
 {
 	
 	CFile file;
-	file.Open(_T("F:\\Liwenjie\\数据库实践课\\finalDBMS\\RKDBMS\\Output\\table.txt"), CFile::modeWrite | CFile::shareDenyWrite);
+	file.Open(_T("table.txt"), CFile::modeWrite | CFile::shareDenyWrite);
 	CRKDBMSDoc* pDoc = (CRKDBMSDoc*)this->GetActiveDocument();
 	CDBEntity* pDB = pDoc->GetEditDB();
-	file.Seek(0,pDoc->getDBAt());
+	file.Seek(pDoc->getDBAt(),CFile::begin);
 	file.Write("1",1);
+	open[pDoc->getDBAt()]=0;
 	file.Close();
 	if (pDB != NULL)
 	{	
@@ -201,10 +210,10 @@ void CMainFrame::OnNewTable()
 		if (nRes == IDOK)
 		{
 			// Get the existed table
-			int nCount = pDB->GetTableNum();
+			int nCount = pDoc->GetTableNum();
 			for (int i = 0; i < nCount; i++)
 			{
-				CString strName = pDB->GetTableAt(i)->GetName();
+				CString strName = pDoc->GetTable(i)->GetName();
 				if (dlg.m_strName == strName)
 				{
 					AfxMessageBox(_T("The table has been existed！"));
@@ -375,7 +384,7 @@ void CMainFrame::OnOpenDatabase()
 	}
 	
 	// The database has been opened
-	open[pDoc->getDBAt()] = FALSE;
+	open[pDoc->getDBAt()] = 0;
 
 	// Update view
 	pDoc->UpdateAllViews(NULL, UPDATE_OPEN_DATABASE, NULL);
@@ -406,12 +415,31 @@ void CMainFrame::OnEditTable()
 	{
 
 		// Create new table
+		CDBEntity* pDB=pDoc->GetEditDB();
+		EditTable editTable;
+		int judge=editTable.DoModal();
+		CTableEntity* pTable=pDoc->GetEditTable();
 		
-		CTableEntity* pTable = pDoc->GetEditTable();
+		if(judge==IDOK)
+		{
+			
+			int nCount = pDoc->GetTableNum();
+			
+			for (int i = 0; i < nCount; i++)
+			{
+				if (editTable.getTableName() == pDoc->GetTable(i)->GetName())
+				{
+					AfxMessageBox(_T("The table has been existed！"));
+					return;
+				}
+			}
+			pTable->SetName(editTable.getTableName());
+		}
 		if (pTable != NULL)
 		{
 			// Switch window
 			SwitchView(TABLE);	
+			pDoc->EditTable(pTable);
 
 			pDoc->UpdateAllViews(NULL, UPDATE_EDIT_TABLE,  pTable);
 		}
@@ -482,7 +510,7 @@ void CMainFrame::OnOpenTable()
 void CMainFrame::OnInsertRecord()
 {
 	CRKDBMSDoc* pDoc = (CRKDBMSDoc*)this->GetActiveDocument();
-	if (open[pDoc->getDBAt()] == TRUE)
+	if (1)
 	{
 		// Get the object of the document
 		
@@ -530,11 +558,7 @@ void CMainFrame::OnInsertRecord()
 ************************************************/ 
 void CMainFrame::OnCreateDatabase()
 {
-	CFile file;
-	file.Open(_T("F:\\Liwenjie\\数据库实践课\\finalDBMS\\RKDBMS\\Output\\table.txt"), CFile::modeWrite | CFile::shareDenyWrite);
-	file.SeekToEnd();
-	file.Write("0",1);
-	file.Close();
+	
 	// Create and display the new table dialog
 	CreateDatabase dlg;
 	int nRes = dlg.DoModal();
@@ -556,6 +580,7 @@ void CMainFrame::OnCreateDatabase()
 				return;
 			}
 		}
+		open[pDoc->GetDBNum()]=0;
 		// Create the database according to the input database name
 		CDBEntity* db = pDoc->CreateDB(dlg.dbname);
 		// Get the exception information
@@ -638,7 +663,7 @@ void CMainFrame::OnModifyRecord()
 void CMainFrame::OnDeleteRecord()
 {
 	CRKDBMSDoc* pDoc = (CRKDBMSDoc*)this->GetActiveDocument();
-	if (open[pDoc->getDBAt()] == TRUE)
+	if (open[pDoc->getDBAt()] == FALSE)
 	{
 		// Get the object of the document
 		
@@ -772,3 +797,46 @@ void CMainFrame::OnDeleteField()
 	}
 }
 
+
+
+void CMainFrame::OnDeleteTable()
+{
+	// TODO: 在此添加命令处理程序代码
+	// TODO: 在此添加命令处理程序代码
+	CRKDBMSDoc* pDoc = (CRKDBMSDoc*)this->GetActiveDocument();
+	
+	CDBEntity* pDB = pDoc->GetEditDB();
+	if (pDB != NULL)
+	{	
+		// Create and display the fields dialog box
+		
+
+		
+			//CFieldEntity field = dlg.GetField();
+			// Decide whether the field exists
+			
+			CTableEntity* pTable = pDoc->GetEditTable();
+			
+			
+			
+			// Add field
+			pDoc->DeleteTable(pTable);
+
+			// If there has exception information, prompt exception
+			CString strError = pDoc->GetError();
+			if (strError.GetLength() != 0)
+			{
+				AfxMessageBox(strError);
+				pDoc->SetError(_T(""));
+				return;
+			}
+
+			// If the added field is not empty, update the view
+			if (pTable != NULL)
+			{
+				//pDoc->UpdateAllViews(NULL, UPDATE_OPEN_TABLE, pTable);
+				pDoc->UpdateAllViews(NULL, UPDATE_Delete_Table, pTable);
+			}
+		
+	}
+}

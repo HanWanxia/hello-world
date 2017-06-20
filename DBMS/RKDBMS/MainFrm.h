@@ -63,6 +63,7 @@ public:
 	afx_msg void OnDeleteRecord();
 	afx_msg void OnModifyField();
 	afx_msg void OnDeleteField();
+	afx_msg void OnDeleteTable();
 };
 
 

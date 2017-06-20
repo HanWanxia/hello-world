@@ -39,7 +39,7 @@ CRKDBMSDoc::CRKDBMSDoc()
 	m_pEditTable = NULL;
 	m_pEditDB = new CDBEntity();
 	char* s=new char[100];
-	file.Open(_T("F:\\Liwenjie\\数据库实践课\\finalDBMS\\RKDBMS\\Output\\database.txt"), CFile::modeReadWrite | CFile::shareDenyWrite);
+	file.Open(_T("database.txt"), CFile::modeReadWrite | CFile::shareDenyWrite);
 	file.SeekToBegin();
 	for(int i=0;i<file.GetLength();i+=100)
 	{
@@ -94,6 +94,7 @@ BOOL CRKDBMSDoc::OnNewDocument()
 		//	Decide whether exists the database
 		if (dbLogic.GetDatabase(m_pEditDB) == false)
 		{
+			mydb.Add(m_pEditDB);
 			//	Decide whether creates the database successfully
 			if (dbLogic.CreateDatabase(m_pEditDB) == false)
 			{
@@ -102,6 +103,7 @@ BOOL CRKDBMSDoc::OnNewDocument()
 			}
 
 		}
+		
 
 		// Set the document title bar
 		CString strTitle;
@@ -797,4 +799,109 @@ int CRKDBMSDoc::getDBAt()
 		}
 	}
 	return i;
+}
+
+bool CRKDBMSDoc::EditTable(CTableEntity* pTable)
+{
+	CTableLogic tbLogic;
+	CFileLogic m_fileLogic;
+	CString strTableFile = m_fileLogic.GetTableFile(GetEditDB()->GetName());
+	try
+	{
+		CFile file;
+		// Open file
+		if (file.Open(strTableFile, CFile::modeWrite | CFile::shareDenyWrite) == FALSE)
+		{
+			return false;
+		}
+		// Write in the database table information to the file
+		int num=0;
+		for(;num<m_arrTable.GetCount();num++)
+		{
+			if(pTable->GetName()==m_arrTable[num]->GetName())
+				break;
+		}
+		file.Seek(num*sizeof(pTable->GetBlock()),CFile::begin);
+		file.Write(&pTable->GetBlock(), sizeof(TableBlock));
+		// Close file
+		file.Close();
+		return true;
+	}
+	catch (CException* e)
+	{
+		e->Delete();
+		throw new CAppException(_T("Failed to add table information!"));
+	}
+	catch (...)
+	{
+		throw new CAppException(_T("Failed to add table information!"));
+	}
+
+	return false;
+
+}
+
+CTableEntity* CRKDBMSDoc::DeleteTable(CTableEntity* pTable)
+{
+	CTableLogic tbLogic;
+	CFileLogic m_fileLogic;
+	CString strTableFile = m_fileLogic.GetTableFile(GetEditDB()->GetName());
+	try
+	{
+		CFile file;
+		// Open file
+		if (file.Open(strTableFile, CFile::modeWrite | CFile::shareDenyWrite) == FALSE)
+		{
+			return false;
+		}
+		// Write in the database table information to the file
+		int num=0;
+		for(;num<m_arrTable.GetCount();num++)
+		{
+			if(pTable->GetName()==m_arrTable[num]->GetName())
+				break;
+		}
+		int len=file.GetLength();
+
+		
+		char* str=new char[len];
+		
+		char* str1=new char[len];
+		
+		int s=strlen(str);
+		int m=strlen(str1);
+		
+		file.SeekToBegin();
+		file.Read(str,num*sizeof(TableBlock));
+		file.Seek((num+1)*sizeof(TableBlock),CFile::begin);
+		file.Read(str1,len-(num+1)*sizeof(TableBlock));
+		file.SetLength(0);
+		file.SeekToBegin();
+		file.Write(str,num*sizeof(TableBlock));
+		file.Write(str1,len-(num+1)*sizeof(TableBlock));
+		m_arrTable.RemoveAt(num);
+		if(file.GetLength()==0)
+		{
+			CFile file1;
+			file1.Open(_T("table.txt"), CFile::modeWrite | CFile::shareDenyWrite) ;
+			file1.Seek(getDBAt(),CFile::begin);
+			file1.Write("0",1);
+			file1.Close();
+		}
+		// Close file
+		file.Close();
+		
+	}
+	catch (CException* e)
+	{
+		e->Delete();
+		throw new CAppException(_T("Failed to add table information!"));
+	}
+	catch (...)
+	{
+		throw new CAppException(_T("Failed to add table information!"));
+	}
+
+	return false;
+
 }

@@ -93,4 +93,6 @@ public:
 	CRKDBMSDoc(CString n);
 	CString name;
 	int getDBAt();
+	bool EditTable(CTableEntity* pTable);
+	CTableEntity* DeleteTable(CTableEntity* pTable);     //Delete field
 };

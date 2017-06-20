@@ -59,7 +59,7 @@ void CDBView::OnInitialUpdate()
 	CTreeView::OnInitialUpdate();
 	CFile file;
 	
-	file.Open(_T("F:\\Liwenjie\\数据库实践课\\finalDBMS\\RKDBMS\\Output\\database.txt"), CFile::modeReadWrite | CFile::shareDenyWrite);
+	file.Open(_T("database.txt"), CFile::modeReadWrite | CFile::shareDenyWrite);
 	
 	file.SeekToBegin();
 	
@@ -142,7 +142,7 @@ void CDBView::OnUpdate(CView* pSender, LPARAM lHint, CObject* pHint)
 	GetLocalTime(&t);
 	CString time=CTimeHelper::ToDatetimeString(t);
 	CStdioFile file;
-	file.Open(_T("F:\\Liwenjie\\数据库实践课\\finalDBMS\\RKDBMS\\Output\\Log.txt"), CFile::modeWrite | CFile::shareDenyWrite);
+	file.Open(_T("Log.txt"), CFile::modeWrite | CFile::shareDenyWrite);
 
 	char* logmess=new char[100];
 	if (pSender == NULL)
@@ -246,6 +246,32 @@ void CDBView::OnUpdate(CView* pSender, LPARAM lHint, CObject* pHint)
 				file.Close();
 			}
 			break;
+			case UPDATE_EDIT_TABLE:
+			{
+				
+				
+				CTableEntity* pTable = pDoc->GetEditTable();
+ 				HTREEITEM hTableItem = ModifyTableNode(pTable->GetName());
+
+				
+				m_pTreeCtrl->SelectItem(hTableItem);
+				file.SeekToEnd();
+				log=time+_T(" ModifyTable ")+m_pTreeCtrl->GetItemText(m_pTreeCtrl->GetSelectedItem())+_T("to")+_T(" ")+pTable->GetName()+_T(" in ")+pDoc->GetEditDB()->GetName()+_T(" ")+pTable->GetName()+_T(";");
+				file.Write(log,2*log.GetLength());
+				file.Close();
+			}
+			break;
+			case UPDATE_Delete_Table:
+			{
+				
+				CTableEntity* pTable = pDoc->GetEditTable();
+ 				DeleteTableNode();
+				file.SeekToEnd();
+				log=time+_T("  DeleteTable  ")+pTable->GetName()+_T(" in ")+pDoc->GetEditDB()->GetName();
+				file.Write(log,2*log.GetLength());
+				file.Close();
+			}
+			break;
 		default:
 			break;
 		}
@@ -343,6 +369,16 @@ HTREEITEM CDBView::ModifyFieldNode(CFieldEntity* pField, HTREEITEM hTableItem,CT
 	m_pTreeCtrl->SetItemText(hItem,pField->GetName());
 	return hItem;
 }
+
+HTREEITEM CDBView::ModifyTableNode(CString tbname)
+{
+	// Get the child item of the table item
+	HTREEITEM hItem = m_pTreeCtrl->GetSelectedItem();
+	
+	
+	m_pTreeCtrl->SetItemText(hItem,tbname);
+	return hItem;
+}
 /***************************************************/
 HTREEITEM CDBView::DeleteFieldNode(CFieldEntity* pField, HTREEITEM hTableItem,CTableEntity* pTable)
 {
@@ -353,6 +389,17 @@ HTREEITEM CDBView::DeleteFieldNode(CFieldEntity* pField, HTREEITEM hTableItem,CT
 
 	m_pTreeCtrl->DeleteItem(hItem);
 	return hItem;
+}
+
+void CDBView::DeleteTableNode()
+{
+	// Get the child item of the table item
+	HTREEITEM hItem = m_pTreeCtrl->GetSelectedItem();
+	
+	
+
+	m_pTreeCtrl->DeleteItem(hItem);
+
 }
 
 /**************************************************************
